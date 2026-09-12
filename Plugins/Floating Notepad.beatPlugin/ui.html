@@ -16,8 +16,8 @@
             --selection-text-color: #000000;
             --scrollbar-background-color: #e0e0e0;
             --scrollbar-thumb-color: #b0b0b0;
-            --highlight-color: #4a90e2; /* Blue color for current highlight */
-            --highlight-color-other: #a0a0a0; /* Grey color for other highlights */
+            --highlight-color: #4a90e2;
+            --highlight-color-other: #a0a0a0;
             --input-background-color: #ffffff;
             --input-text-color: #333333;
             --input-border-color: #cccccc;
@@ -34,8 +34,8 @@
                 --selection-text-color: #ffffff;
                 --scrollbar-background-color: #333;
                 --scrollbar-thumb-color: #555;
-                --highlight-color: #4a90e2; /* Blue color for current highlight */
-                --highlight-color-other: #707070; /* Grey color for other highlights */
+                --highlight-color: #4a90e2;
+                --highlight-color-other: #707070;
                 --input-background-color: #333333;
                 --input-text-color: #d5d5d5;
                 --input-border-color: #555555;
@@ -48,7 +48,7 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             background-color: var(--background-color);
             color: var(--text-color);
             margin: 0;
@@ -69,45 +69,37 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 0px 10px; /* Add padding to move elements away from edges */
+            padding: 4px 10px;
             background-color: var(--footer-background-color);
             color: var(--footer-text-color);
             position: relative;
+            gap: 10px;
         }
 
-        .header:hover .checkboxes,
-        .header:hover .search-bar,
-        .header:hover .font-size-controls {
-            opacity: 1;
-            visibility: visible;
-        }
-
-        .header .checkboxes,
-        .header .search-bar,
-        .header .font-size-controls {
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.3s ease, visibility 0.3s ease;
-        }
-
-        .header .checkboxes {
+        .jump-nav {
             display: flex;
             align-items: center;
-            margin-left: 10px; 
         }
 
-        .header label {
-            margin: 0 5px;
-            font-size: 0.9em;
+        .jump-nav select {
+            padding: 3px 6px;
+            font-size: 0.85em;
+            background-color: var(--input-background-color);
+            color: var(--input-text-color);
+            border: 1px solid var(--input-border-color);
+            border-radius: 3px;
+            max-width: 180px;
+            cursor: pointer;
         }
 
         .search-bar {
             display: flex;
             align-items: center;
-            padding: 5px;
+            padding: 2px;
             background-color: var(--footer-background-color);
             color: var(--footer-text-color);
-            margin-right: 24px; /* Adjust to avoid overlap with icon */
+            flex-grow: 1;
+            max-width: 300px;
         }
 
         .search-bar input {
@@ -130,13 +122,12 @@
             color: var(--footer-text-color);
             display: flex;
             align-items: center;
-            margin: -3px; /* Adjusted margin to bring the buttons closer */
+            margin: -3px;
         }
 
-
         .search-bar button svg {
-            width: 24px; /* Increased size */
-            height: 24px; /* Increased size */
+            width: 20px;
+            height: 20px;
         }
 
         .search-bar .clear-search {
@@ -148,32 +139,16 @@
         .font-size-controls {
             display: flex;
             align-items: center;
-            padding: 5px;
+            padding: 2px;
         }
 
         .font-size-controls button {
             background: none;
             border: none;
-            font-size: 1.5em;
+            font-size: 1.4em;
             cursor: pointer;
-            margin: 0px; /* Adjusted margin to bring the buttons closer */
+            margin: 0 2px;
             color: var(--footer-text-color);
-        }
-
-
-        .settings-icon {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 5px;
-            margin-right: 10px;
-            color: var(--footer-text-color);
-            cursor: pointer;
-        }
-
-        .settings-icon svg {
-            width: 15px;
-            height: 15px;
         }
 
         .footer-icon {
@@ -182,7 +157,7 @@
             bottom: 10px;
             top: auto;
             transform: translateY(0);
-            font-size: 20px; /* Adjust font size */
+            font-size: 20px;
             font-weight: bold;
         }
 
@@ -195,7 +170,7 @@
             opacity: 0;
             visibility: hidden;
             transition: opacity 0.3s ease, visibility 0.3s ease;
-            margin-right: 30px; /* Adjusted to avoid overlap with footer icon */
+            margin-right: 30px;
         }
 
         .content {
@@ -245,11 +220,10 @@
             display: flex;
             align-items: center;
             justify-content: right;
-            height: 40px; /* Increased height */
+            height: 40px;
             position: relative;
         }
 
-        /* Scrollbar styling */
         ::-webkit-scrollbar {
             width: 10px;
         }
@@ -264,37 +238,19 @@
             border: 2px solid var(--scrollbar-background-color);
         }
 
-        /* Markdown syntax transparency */
-        .cm-header, .cm-strong, .cm-em, .cm-link {
-            color: var(--text-color);
+        .CodeMirror-line span.cm-formatting {
+            display: none !important;
+        }
+        .CodeMirror-activeline .CodeMirror-line span.cm-formatting {
+            display: inline !important;
         }
 
-        .cm-header.cm-formatting, .cm-strong.cm-formatting, .cm-em.cm-formatting, .cm-link.cm-formatting {
-            opacity: 0.1;
-        }
+        .cm-header-1 { font-size: 1.75em; }
+        .cm-header-2 { font-size: 1.50em; }
+        .cm-header-3 { font-size: 1.25em; }
+        .cm-header-4 { font-size: 1.15em; }
+        .cm-header-5 { font-size: 1.0em; }
 
-        /* Custom heading sizes */
-        .cm-header-1 {
-            font-size: 1.75em !important;
-        }
-
-        .cm-header-2 {
-            font-size: 1.50em !important;
-        }
-
-        .cm-header-3 {
-            font-size: 1.25em !important;
-        }
-
-        .cm-header-4 {
-            font-size: 1.15em !important;
-        }
-
-        .cm-header-5 {
-            font-size: 1.0em !important;
-        }
-
-        /* Search highlight styling */
         .search-highlight-current {
             background-color: var(--highlight-color);
             color: var(--selection-text-color);
@@ -309,10 +265,10 @@
 <body>
     <div class="container">
         <div class="header">
-            <div class="checkboxes">
-                <label><input type="checkbox" id="heading1" checked> #</label>
-                <label><input type="checkbox" id="heading2" checked> ##</label>
-                <label><input type="checkbox" id="heading3" checked> ###</label>
+            <div class="jump-nav">
+                <select id="headerSelect">
+                    <option value="">Jump to heading...</option>
+                </select>
             </div>
             <div class="search-bar">
                 <input type="text" id="searchInput" placeholder="Find...">
@@ -332,14 +288,13 @@
                 <button id="increaseFontSize">+</button>
                 <button id="decreaseFontSize">-</button>
             </div>
-            
         </div>
         <div class="content">
             <textarea id="notepadTextarea"></textarea>
         </div>
         <div class="footer">
             <div class="footer-instructions">
-                Use ⌥↑ and ⌥↓ to move between Heading sections. Use ⌘⌥ 3 to toggle floating notepad.
+                Open dropdown (⌘/). Jump sections (⌥↑/↓). Toggle window (⌥⌘3). Markdown markup shows only on active line.
             </div>
             <div class="footer-icon">
                 ?
@@ -347,18 +302,12 @@
         </div>
     </div>
 
-    
-</body>
-</html>
-
-    </div>
-    <script src="https://cdn.jsdelivr.net/simplemde/latest/simplemde.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/simplemde@1.11.2/dist/simplemde.min.js"></script>
     <script>
         let simplemde;
         let searchMatches = [];
         let currentMatchIndex = -1;
-        let headingLevels = [1, 2, 3]; // Default heading levels to navigate
-        let fontSize = 16; // Default font size
+        let fontSize = 16;
 
         function initializeEditor(content) {
             simplemde = new SimpleMDE({
@@ -385,24 +334,40 @@
                         highlightFormatting: true,
                         underscoresBreakWords: false,
                         emoji: true,
-                    }
+                    },
+                    inputStyle: "contenteditable"
                 }
             });
 
-            simplemde.codemirror.on("change", debounce(syncNotepadToMain, 500));
+            const cm = simplemde.codemirror;
+            const inputField = cm.getInputField();
+            if (inputField) {
+                inputField.setAttribute("spellcheck", "true");
+                inputField.setAttribute("autocorrect", "true");
+                inputField.setAttribute("autocapitalize", "sentences");
+            }
 
-            // Add custom key bindings
-            simplemde.codemirror.addKeyMap({
-                "Alt-Down": (cm) => navigateToNextHeading(cm),
-                "Alt-Up": (cm) => navigateToPreviousHeading(cm)
+            let lastActiveLine = -1;
+            cm.on("cursorActivity", () => {
+                const currentLine = cm.getCursor().line;
+                if (currentLine !== lastActiveLine) {
+                    if (lastActiveLine >= 0 && lastActiveLine < cm.lineCount()) {
+                        cm.removeLineClass(lastActiveLine, "wrap", "CodeMirror-activeline");
+                    }
+                    cm.addLineClass(currentLine, "wrap", "CodeMirror-activeline");
+                    lastActiveLine = currentLine;
+                }
             });
+            cm.addLineClass(cm.getCursor().line, "wrap", "CodeMirror-activeline");
 
-            // Add event listeners for font size controls
+            cm.on("change", debounce(syncNotepadToMain, 500));
+
             document.getElementById('increaseFontSize').addEventListener('click', () => changeFontSize(2));
             document.getElementById('decreaseFontSize').addEventListener('click', () => changeFontSize(-2));
-
-            // Add event listener for clearing search input
             document.getElementById('clearSearch').addEventListener('click', clearSearchInput);
+            document.getElementById('headerSelect').addEventListener('change', jumpToSelectedHeader);
+
+            updateHeaderDropdown();
         }
 
         function refreshNotepad() {
@@ -414,6 +379,7 @@
                     } else {
                         simplemde.value(text);
                     }
+                    updateHeaderDropdown();
                 }
             );
         }
@@ -426,7 +392,6 @@
             );
         }
 
-        // Debounce function to limit the frequency of sync operations
         function debounce(func, wait) {
             let timeout;
             return function(...args) {
@@ -435,56 +400,48 @@
             };
         }
 
-        // Function to navigate to the next heading of the selected levels
-        function navigateToNextHeading(cm) {
-            const cursor = cm.getCursor();
-            const lineCount = cm.lineCount();
-            const headingRegexes = headingLevels.map(level => new RegExp(`^#{${level}}\\s*[^#]`));
-            for (let i = cursor.line + 1; i < lineCount; i++) {
-                const lineText = cm.getLine(i);
-                if (headingRegexes.some(regex => regex.test(lineText))) {
-                    cm.setCursor({ line: i, ch: 0 });
-                    break;
+        function updateHeaderDropdown() {
+            if (!simplemde) return;
+            const cm = simplemde.codemirror;
+            const select = document.getElementById('headerSelect');
+            if (!select) return;
+
+            const currentVal = select.value;
+            select.innerHTML = '<option value="">Jump to heading...</option>';
+
+            const headerRegex = /^(#{1,6})\s*(.+)$/;
+            cm.eachLine((line) => {
+                const match = line.text.match(headerRegex);
+                if (match) {
+                    const lineNum = cm.getLineNumber(line);
+                    const hashes = match[1];
+                    const title = match[2].trim();
+                    const indent = "&nbsp;&nbsp;".repeat(hashes.length - 1);
+                    
+                    const opt = document.createElement('option');
+                    opt.value = lineNum;
+                    opt.innerHTML = indent + hashes + " " + title;
+                    select.appendChild(opt);
                 }
+            });
+            select.value = currentVal;
+        }
+
+        function jumpToSelectedHeader() {
+            const select = document.getElementById('headerSelect');
+            const lineNum = parseInt(select.value, 10);
+            if (!isNaN(lineNum) && simplemde) {
+                const cm = simplemde.codemirror;
+                cm.setCursor({ line: lineNum, ch: 0 });
+                cm.scrollIntoView({ line: lineNum, ch: 0 }, 100);
+                cm.focus();
             }
         }
 
-        // Function to navigate to the previous heading of the selected levels
-        function navigateToPreviousHeading(cm) {
-            const cursor = cm.getCursor();
-            const headingRegexes = headingLevels.map(level => new RegExp(`^#{${level}}\\s*[^#]`));
-            for (let i = cursor.line - 1; i >= 0; i--) {
-                const lineText = cm.getLine(i);
-                if (headingRegexes.some(regex => regex.test(lineText))) {
-                    cm.setCursor({ line: i, ch: 0 });
-                    break;
-                }
-            }
-        }
-
-        // Update heading levels based on checkbox selections
-        function updateHeadingLevels() {
-            headingLevels = [];
-            if (document.getElementById('heading1').checked) headingLevels.push(1);
-            if (document.getElementById('heading2').checked) headingLevels.push(2);
-            if (document.getElementById('heading3').checked) headingLevels.push(3);
-        }
-
-        // Add event listeners to checkboxes
-        document.getElementById('heading1').addEventListener('change', updateHeadingLevels);
-        document.getElementById('heading2').addEventListener('change', updateHeadingLevels);
-        document.getElementById('heading3').addEventListener('change', updateHeadingLevels);
-
-        // Sync notepad content when the window loads
         window.addEventListener('load', refreshNotepad);
-
-        // Sync notepad content when the window gains focus
         window.addEventListener("focus", refreshNotepad);
-
-        // Sync notepad content initially
         refreshNotepad();
 
-        // Search functionality
         document.getElementById('searchInput').addEventListener('input', performSearch);
         document.getElementById('findPrev').addEventListener('click', () => navigateSearchResults(-1));
         document.getElementById('findNext').addEventListener('click', () => navigateSearchResults(1));
@@ -504,7 +461,7 @@
                     }
                 });
                 highlightMatches();
-                navigateSearchResults(1); // Move to the first match
+                navigateSearchResults(1);
             } else {
                 clearHighlights();
             }
@@ -533,9 +490,9 @@
             currentMatchIndex = (currentMatchIndex + direction + searchMatches.length) % searchMatches.length;
             const match = searchMatches[currentMatchIndex];
             const cm = simplemde.codemirror;
-            cm.setCursor ({ line: match.line, ch: match.ch });
+            cm.setCursor({ line: match.line, ch: match.ch });
             cm.scrollIntoView({ line: match.line, ch: match.ch });
-            highlightMatches(); // Update highlights to reflect current match
+            highlightMatches();
         }
 
         function changeFontSize(delta) {
@@ -547,6 +504,68 @@
             document.getElementById('searchInput').value = '';
             clearHighlights();
         }
+
+        function jumpRelative(direction) {
+            if (!simplemde) return;
+            const cm = simplemde.codemirror;
+            const currentLine = cm.getCursor().line;
+            const headerRegex = /^(#{1,6})\s*(.+)$/;
+            const headerLines = [];
+
+            cm.eachLine((line) => {
+                if (headerRegex.test(line.text)) {
+                    headerLines.push(cm.getLineNumber(line));
+                }
+            });
+
+            if (headerLines.length === 0) return;
+
+            let targetLine = headerLines[0];
+            if (direction > 0) {
+                const next = headerLines.find(l => l > currentLine);
+                targetLine = next !== undefined ? next : headerLines[0];
+            } else {
+                const prev = [...headerLines].reverse().find(l => l < currentLine);
+                targetLine = prev !== undefined ? prev : headerLines[headerLines.length - 1];
+            }
+
+            cm.setCursor({ line: targetLine, ch: 0 });
+            cm.scrollIntoView({ line: targetLine, ch: 0 }, 100);
+            cm.focus();
+        }
+
+        // Handle global shortcuts
+        window.addEventListener('keydown', (e) => {
+            // Opt + Up/Down for relative heading navigation
+            if (e.altKey && !e.metaKey && !e.ctrlKey && !e.shiftKey) {
+                if (e.key === "ArrowDown") {
+                    e.preventDefault();
+                    jumpRelative(1);
+                } else if (e.key === "ArrowUp") {
+                    e.preventDefault();
+                    jumpRelative(-1);
+                }
+            }
+
+            // Cmd + / to focus and expand/open the header dropdown menu
+            if (e.metaKey && e.key === '/') {
+                e.preventDefault();
+                const selectElement = document.getElementById('headerSelect');
+                if (selectElement) {
+                    selectElement.focus();
+                    if (typeof selectElement.showPicker === 'function') {
+                        selectElement.showPicker();
+                    } else {
+                        const event = new MouseEvent('mousedown', {
+                            bubbles: true,
+                            cancelable: true,
+                            view: window
+                        });
+                        selectElement.dispatchEvent(event);
+                    }
+                }
+            }
+        });
     </script>
 </body>
 </html>

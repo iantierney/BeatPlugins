@@ -1,0 +1,1795 @@
+<style>
+	:root {
+		color-scheme: light dark;
+		--bg: #f4f4f5;
+		--card-bg: #ffffff;
+		--border: #d9d9dd;
+		--text: #1c1c1e;
+		--muted: #737378;
+		--accent: #3b6fe0;
+		--danger: #d0453f;
+	}
+	@media (prefers-color-scheme: dark) {
+		:root {
+			--bg: #1e1e20;
+			--card-bg: #2a2a2d;
+			--border: #3a3a3d;
+			--text: #f2f2f3;
+			--muted: #9a9a9e;
+		}
+	}
+	* { box-sizing: border-box; }
+	html, body { height: 100%; }
+	body {
+		margin: 0;
+		display: flex;
+		flex-direction: column;
+		font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+		background: var(--bg);
+		color: var(--text);
+	}
+	header {
+		flex: 0 0 auto;
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 12px;
+		padding: 12px 16px;
+		border-bottom: 1px solid var(--border);
+		background: var(--bg);
+		z-index: 1;
+	}
+	.tabs { display: flex; flex-wrap: wrap; gap: 6px; }
+	.tab {
+		flex: 0 0 auto;
+		border: 1px solid var(--border);
+		background: var(--card-bg);
+		color: var(--text);
+		padding: 6px 14px;
+		border-radius: 6px;
+		cursor: pointer;
+		font-size: 13px;
+		white-space: nowrap;
+	}
+	.tab.active { background: var(--accent); border-color: var(--accent); color: white; }
+	.spacer { flex: 1 0 auto; min-width: 8px; }
+	.refresh {
+		flex: 0 0 auto;
+		border: none;
+		background: none;
+		color: var(--muted);
+		cursor: pointer;
+		font-size: 13px;
+		white-space: nowrap;
+	}
+	.refresh:hover { color: var(--text); }
+	.lang-select {
+		flex: 0 0 auto;
+		border: 1px solid var(--border);
+		background: var(--card-bg);
+		color: var(--text);
+		font-size: 12px;
+		padding: 4px 6px;
+		border-radius: 6px;
+	}
+	main {
+		flex: 1 1 auto;
+		min-height: 0;
+		overflow-y: auto;
+		padding: 16px;
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+		align-content: start;
+		align-items: start;
+		gap: 16px;
+	}
+	.empty {
+		grid-column: 1 / -1;
+		color: var(--muted);
+		text-align: center;
+		padding: 40px 0;
+		font-size: 13px;
+	}
+	.card {
+		background: var(--card-bg);
+		border: 1px solid var(--border);
+		border-radius: 10px;
+		overflow: hidden;
+		display: flex;
+		flex-direction: column;
+	}
+	.photo-slot {
+		aspect-ratio: 1 / 1;
+		background: var(--bg);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		cursor: pointer;
+		position: relative;
+		overflow: hidden;
+		border: 2px dashed transparent;
+	}
+	.photo-slot.selected { border-color: var(--accent); }
+	.photo-slot.dragover { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 15%, var(--bg)); }
+	.photo-slot img {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+		display: block;
+	}
+	.photo-slot .placeholder {
+		color: var(--muted);
+		font-size: 11px;
+		text-align: center;
+		padding: 8px;
+		line-height: 1.4;
+	}
+	.remove-btn {
+		position: absolute;
+		top: 6px;
+		right: 6px;
+		width: 20px;
+		height: 20px;
+		border-radius: 50%;
+		border: none;
+		background: rgba(0,0,0,0.55);
+		color: white;
+		font-size: 12px;
+		line-height: 20px;
+		text-align: center;
+		cursor: pointer;
+		padding: 0;
+	}
+	.name {
+		padding: 6px 10px 2px 10px;
+		font-size: 12px;
+		text-align: center;
+		word-break: break-word;
+		border-top: 1px solid var(--border);
+	}
+	.hint {
+		flex: 0 0 auto;
+		padding: 8px 16px 0 16px;
+		font-size: 12px;
+		color: var(--muted);
+	}
+
+	.danger-zone {
+		display: flex;
+		flex: 0 0 auto;
+		align-items: center;
+		justify-content: flex-end;
+		gap: 10px;
+		padding: 10px 16px;
+		border-top: 1px solid var(--border);
+	}
+	.lock-toggle {
+		flex: 0 0 auto;
+		border: 1px solid var(--border);
+		background: var(--card-bg);
+		color: var(--text);
+		width: 30px;
+		height: 30px;
+		border-radius: 6px;
+		font-size: 14px;
+		cursor: pointer;
+	}
+	.danger-btn {
+		flex: 0 0 auto;
+		border: 1px solid var(--danger);
+		background: none;
+		color: var(--danger);
+		padding: 6px 12px;
+		border-radius: 6px;
+		font-size: 12px;
+		cursor: pointer;
+		white-space: nowrap;
+	}
+	.danger-btn:disabled { opacity: 0.35; cursor: default; border-color: var(--border); color: var(--muted); }
+
+	.modal-overlay {
+		position: fixed;
+		inset: 0;
+		background: rgba(0,0,0,0.5);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		z-index: 10;
+	}
+	.modal-box {
+		background: var(--card-bg);
+		color: var(--text);
+		border-radius: 10px;
+		padding: 20px;
+		max-width: 320px;
+		text-align: center;
+		box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+	}
+	.modal-box h3 { margin: 0 0 8px 0; font-size: 15px; }
+	.modal-box p { margin: 0 0 16px 0; font-size: 13px; color: var(--muted); }
+	.modal-actions { display: flex; gap: 10px; justify-content: center; }
+	.modal-actions button {
+		padding: 6px 14px;
+		border-radius: 6px;
+		font-size: 13px;
+		cursor: pointer;
+		border: 1px solid var(--border);
+	}
+	.modal-cancel { background: var(--bg); color: var(--text); }
+	.modal-confirm { border: none; background: var(--danger); color: white; }
+
+	.rank-badge {
+		position: absolute;
+		top: 6px;
+		left: 6px;
+		min-width: 18px;
+		height: 18px;
+		padding: 0 5px;
+		border-radius: 9px;
+		background: rgba(0,0,0,0.55);
+		color: white;
+		font-size: 10px;
+		font-weight: 700;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+	/* Barra ◀ NOM ▶ per reordenar la importància dels personatges */
+	.name-nav {
+		display: flex;
+		align-items: stretch;
+		border-top: 1px solid var(--border);
+	}
+	.name-nav .nav-btn {
+		border: none;
+		background: none;
+		color: var(--muted);
+		cursor: pointer;
+		font-size: 13px;
+		padding: 6px 10px;
+		flex: 0 0 auto;
+	}
+	.name-nav .nav-btn:hover:not(:disabled) { color: var(--text); background: var(--bg); }
+	.name-nav .nav-btn:disabled { opacity: 0.2; cursor: default; }
+	.name-nav .name-label {
+		flex: 1 1 auto;
+		min-width: 0;
+		padding: 6px 2px;
+		font-size: 12px;
+		text-align: center;
+		word-break: break-word;
+		align-self: center;
+	}
+	/* La targeta ha de tenir posició relativa perquè les altres targetes
+	   puguin lliscar per sobre/per sota durant l'animació de reordenar */
+	.card { position: relative; }
+
+	:root {
+		--chat-0-bg: #ffe0b2; --chat-0-fg: #5c3d00;
+		--chat-1-bg: #b2ebf2; --chat-1-fg: #003b40;
+		--chat-2-bg: #f8bbd0; --chat-2-fg: #5c0030;
+		--chat-3-bg: #d1c4e9; --chat-3-fg: #2e1a5c;
+		--chat-4-bg: #dcedc8; --chat-4-fg: #33430a;
+		--chat-5-bg: #ffccbc; --chat-5-fg: #5c1900;
+	}
+	@media (prefers-color-scheme: dark) {
+		:root {
+			--chat-0-bg: #6d4c00; --chat-0-fg: #ffe0b2;
+			--chat-1-bg: #00494f; --chat-1-fg: #b2ebf2;
+			--chat-2-bg: #6b0033; --chat-2-fg: #f8bbd0;
+			--chat-3-bg: #33205c; --chat-3-fg: #d1c4e9;
+			--chat-4-bg: #3a4a12; --chat-4-fg: #dcedc8;
+			--chat-5-bg: #6b2200; --chat-5-fg: #ffccbc;
+		}
+	}
+	.side-b .bubble.c0 { background: var(--chat-0-bg); color: var(--chat-0-fg); }
+	.side-b .bubble.c1 { background: var(--chat-1-bg); color: var(--chat-1-fg); }
+	.side-b .bubble.c2 { background: var(--chat-2-bg); color: var(--chat-2-fg); }
+	.side-b .bubble.c3 { background: var(--chat-3-bg); color: var(--chat-3-fg); }
+	.side-b .bubble.c4 { background: var(--chat-4-bg); color: var(--chat-4-fg); }
+	.side-b .bubble.c5 { background: var(--chat-5-bg); color: var(--chat-5-fg); }
+
+	/* Estreta i centrada, com un xat de veritat, encara que la finestra
+	   sigui ampla (perquè també hi ha de cabre el mòdul Player). */
+	main.chat {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		padding: 0;
+	}
+	.scene-block {
+		width: 520px;
+		max-width: 100%;
+		padding: 0 16px 22px 16px;
+	}
+	/* Capçalera de cada escena: la foto de la localització surt aquí, com
+	   una petita targeta de capítol, no com a fons de tota la conversa. */
+	.scene-header-banner {
+		position: relative;
+		height: 170px;
+		margin: 0 -16px 16px -16px;
+		background-size: cover;
+		background-position: center;
+		background-color: var(--card-bg);
+		display: flex;
+		align-items: flex-end;
+		justify-content: center;
+		padding-bottom: 14px;
+	}
+	/* La píndola del text ja porta el seu propi fons fosc per llegir-se bé,
+	   així que la foto de la capçalera es veu tal qual, sense enfosquir. */
+	.scene-header-plain {
+		display: flex;
+		justify-content: center;
+		padding: 20px 0 6px 0;
+	}
+	.scene-heading {
+		position: relative;
+		z-index: 1;
+		display: block;
+		width: fit-content;
+		max-width: 80%;
+		margin: 0 auto;
+		padding: 4px 12px;
+		border-radius: 20px;
+		background: rgba(0,0,0,0.5);
+		color: white;
+		font-size: 11px;
+		letter-spacing: 0.03em;
+		text-align: center;
+	}
+	.bubble-row {
+		display: flex;
+		align-items: flex-end;
+		gap: 8px;
+		margin: 2px 0;
+		max-width: 78%;
+	}
+	/* Més espai quan canvia qui parla, perquè es distingeixin bé els torns */
+	.bubble-row.new-speaker { margin-top: 16px; }
+	.bubble-row.side-b { margin-right: auto; }
+	.bubble-row.side-a { margin-left: auto; flex-direction: row-reverse; }
+	.scene-action {
+		max-width: 80%;
+		margin: 14px auto;
+		text-align: center;
+		font-size: 13px;
+		color: var(--muted);
+	}
+	/* Resum ben visible al final de cada escena: sempre lletra blanca sobre
+	   una píndola fosca (com la capçalera), perquè es llegeixi igual de bé
+	   sobre fons clar que fosc. */
+	.scene-total-time {
+		display: block;
+		width: fit-content;
+		max-width: 80%;
+		margin: 18px auto 4px auto;
+		padding: 6px 16px;
+		border-radius: 20px;
+		background: rgba(0,0,0,0.55);
+		color: #ffffff;
+		font-size: 12px;
+		font-weight: 700;
+		letter-spacing: 0.02em;
+		text-align: center;
+	}
+	.avatar {
+		width: 32px;
+		height: 32px;
+		border-radius: 50%;
+		flex: 0 0 32px;
+		object-fit: cover;
+		background: var(--accent);
+		color: white;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-size: 12px;
+		font-weight: 600;
+	}
+	/* Les miniatures de la Conversa sempre grans, sense opció de fer-les petites */
+	main.chat .avatar {
+		width: 64px;
+		height: 64px;
+		flex: 0 0 64px;
+		font-size: 18px;
+	}
+	.bubble {
+		border-radius: 14px;
+		padding: 6px 12px;
+		font-size: 13px;
+		line-height: 1.4;
+		box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+	}
+	.side-b .bubble { background: var(--card-bg); color: var(--text); border-bottom-left-radius: 3px; }
+	.side-a .bubble { background: var(--accent); color: white; border-bottom-right-radius: 3px; }
+	.bubble .character-name {
+		font-size: 10px;
+		font-weight: 700;
+		opacity: 0.7;
+		margin-bottom: 2px;
+	}
+	.bubble .parenthetical {
+		font-style: italic;
+		font-size: 11px;
+		opacity: 0.75;
+		margin-bottom: 2px;
+	}
+	.bubble .bubble-time {
+		font-size: 10px;
+		opacity: 0.6;
+		text-align: right;
+		margin-top: 3px;
+	}
+
+	main.player {
+		display: flex;
+		flex-direction: column;
+		padding: 0;
+		overflow: hidden;
+	}
+	.player-wrap {
+		flex: 1 1 auto;
+		min-height: 0;
+		width: 100%;
+		position: relative;
+		overflow: hidden;
+	}
+	.player-bg {
+		position: absolute;
+		inset: 0;
+		background-size: cover;
+		background-position: center;
+		background-color: var(--bg);
+		transition: opacity 300ms ease;
+	}
+	.player-content {
+		position: relative;
+		z-index: 1;
+		width: 100%;
+		height: 100%;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 20px;
+		padding: 24px 16px 20px 16px;
+	}
+	/* La filera de cercles i la capçalera d'escena van sempre a dalt, a una
+	   distància fixa; l'espai extra sempre va abans dels controls de sota,
+	   perquè el text mai no mogui res de lloc. */
+	.player-circles {
+		flex: 0 0 auto;
+		display: flex;
+		gap: 28px;
+		flex-wrap: wrap;
+		justify-content: center;
+	}
+	.player-circle-col {
+		position: relative;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 8px;
+	}
+	/* Cronòmetre circular: es dibuixa com un rellotge al voltant del
+	   cercle de qui parla, mostrant quant queda de la seva frase. Va fora
+	   del cercle (no dins), perquè "overflow:hidden" del cercle el tallaria. */
+	.timer-ring {
+		position: absolute;
+		top: -8px;
+		left: 50%;
+		width: 146px;
+		height: 146px;
+		margin-left: -73px;
+		transform: rotate(-90deg);
+		pointer-events: none;
+		opacity: 0;
+		transition: opacity 200ms ease;
+	}
+	.timer-ring.visible { opacity: 1; }
+	.timer-ring-bg { fill: none; stroke: rgba(0,0,0,0.25); stroke-width: 3; }
+	.timer-ring-fg {
+		fill: none;
+		stroke: rgba(255,255,255,0.9);
+		stroke-width: 3;
+		stroke-linecap: round;
+	}
+	/* Color propi de cada personatge (una mica més clar que el de la
+	   bombolla) i un lleuger glow, perquè es reconegui d'un cop d'ull. */
+	.timer-ring-fg.ring-a {
+		stroke: color-mix(in srgb, var(--accent) 55%, white 45%);
+		filter: drop-shadow(0 0 5px var(--accent));
+	}
+	.timer-ring-fg.ring-c0 { stroke: color-mix(in srgb, var(--chat-0-fg) 55%, white 45%); filter: drop-shadow(0 0 5px var(--chat-0-fg)); }
+	.timer-ring-fg.ring-c1 { stroke: color-mix(in srgb, var(--chat-1-fg) 55%, white 45%); filter: drop-shadow(0 0 5px var(--chat-1-fg)); }
+	.timer-ring-fg.ring-c2 { stroke: color-mix(in srgb, var(--chat-2-fg) 55%, white 45%); filter: drop-shadow(0 0 5px var(--chat-2-fg)); }
+	.timer-ring-fg.ring-c3 { stroke: color-mix(in srgb, var(--chat-3-fg) 55%, white 45%); filter: drop-shadow(0 0 5px var(--chat-3-fg)); }
+	.timer-ring-fg.ring-c4 { stroke: color-mix(in srgb, var(--chat-4-fg) 55%, white 45%); filter: drop-shadow(0 0 5px var(--chat-4-fg)); }
+	.timer-ring-fg.ring-c5 { stroke: color-mix(in srgb, var(--chat-5-fg) 55%, white 45%); filter: drop-shadow(0 0 5px var(--chat-5-fg)); }
+	.player-circle {
+		width: 130px;
+		height: 130px;
+		border-radius: 50%;
+		border: 5px solid transparent;
+		padding: 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		overflow: hidden;
+		background: rgba(0,0,0,0.15);
+		transition: border-color 300ms ease, box-shadow 300ms ease;
+	}
+	.player-circle .player-avatar {
+		width: 100%;
+		height: 100%;
+		flex: 1 1 100%;
+		border-radius: 50%;
+		font-size: 34px;
+	}
+	.player-circle.active.active-a {
+		border-color: var(--accent);
+		box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent) 30%, transparent);
+	}
+	.player-circle.active.active-c0 { border-color: var(--chat-0-bg); box-shadow: 0 0 0 6px color-mix(in srgb, var(--chat-0-bg) 30%, transparent); }
+	.player-circle.active.active-c1 { border-color: var(--chat-1-bg); box-shadow: 0 0 0 6px color-mix(in srgb, var(--chat-1-bg) 30%, transparent); }
+	.player-circle.active.active-c2 { border-color: var(--chat-2-bg); box-shadow: 0 0 0 6px color-mix(in srgb, var(--chat-2-bg) 30%, transparent); }
+	.player-circle.active.active-c3 { border-color: var(--chat-3-bg); box-shadow: 0 0 0 6px color-mix(in srgb, var(--chat-3-bg) 30%, transparent); }
+	.player-circle.active.active-c4 { border-color: var(--chat-4-bg); box-shadow: 0 0 0 6px color-mix(in srgb, var(--chat-4-bg) 30%, transparent); }
+	.player-circle.active.active-c5 { border-color: var(--chat-5-bg); box-shadow: 0 0 0 6px color-mix(in srgb, var(--chat-5-bg) 30%, transparent); }
+	.player-caption {
+		font-size: 12px;
+		font-weight: 600;
+		color: var(--text);
+		text-shadow: 0 1px 3px rgba(0,0,0,0.4);
+	}
+	.player-stage {
+		flex: 0 0 auto;
+		align-self: flex-start;
+		position: relative;
+		text-align: center;
+		max-width: 560px;
+		min-height: 1.4em;
+		background: rgba(0,0,0,0.4);
+		color: white;
+		border-radius: 14px;
+		padding: 16px 22px;
+		transition: opacity 300ms ease, background-color 300ms ease, color 300ms ease, margin-left 300ms ease;
+	}
+	/* Mateix codi de colors que les bombolles de la Conversa: el "líder" en
+	   blau accent, la resta amb el seu color propi (segons el seu rang). */
+	.player-stage.side-a { background: var(--accent); color: white; }
+	.player-stage.side-b.c0 { background: var(--chat-0-bg); color: var(--chat-0-fg); }
+	.player-stage.side-b.c1 { background: var(--chat-1-bg); color: var(--chat-1-fg); }
+	.player-stage.side-b.c2 { background: var(--chat-2-bg); color: var(--chat-2-fg); }
+	.player-stage.side-b.c3 { background: var(--chat-3-bg); color: var(--chat-3-fg); }
+	.player-stage.side-b.c4 { background: var(--chat-4-bg); color: var(--chat-4-fg); }
+	.player-stage.side-b.c5 { background: var(--chat-5-bg); color: var(--chat-5-fg); }
+	/* La "cua" de còmic que uneix la bombolla amb qui parla */
+	.stage-tail {
+		position: absolute;
+		top: -9px;
+		width: 0;
+		height: 0;
+		border-left: 9px solid transparent;
+		border-right: 9px solid transparent;
+		border-bottom: 9px solid rgba(0,0,0,0.4);
+		opacity: 0;
+		transition: left 300ms ease, opacity 300ms ease, border-bottom-color 300ms ease;
+	}
+	.stage-tail.visible { opacity: 1; }
+	.player-stage.side-a .stage-tail { border-bottom-color: var(--accent); }
+	.player-stage.side-b.c0 .stage-tail { border-bottom-color: var(--chat-0-bg); }
+	.player-stage.side-b.c1 .stage-tail { border-bottom-color: var(--chat-1-bg); }
+	.player-stage.side-b.c2 .stage-tail { border-bottom-color: var(--chat-2-bg); }
+	.player-stage.side-b.c3 .stage-tail { border-bottom-color: var(--chat-3-bg); }
+	.player-stage.side-b.c4 .stage-tail { border-bottom-color: var(--chat-4-bg); }
+	.player-stage.side-b.c5 .stage-tail { border-bottom-color: var(--chat-5-bg); }
+	.player-name {
+		font-size: 13px;
+		font-weight: 700;
+		letter-spacing: 0.04em;
+		opacity: 0.85;
+		margin-bottom: 4px;
+	}
+	.player-parenthetical {
+		font-style: italic;
+		font-size: 13px;
+		opacity: 0.8;
+		margin-bottom: 6px;
+	}
+	.player-text {
+		font-size: 20px;
+		line-height: 1.4;
+	}
+	.player-controls {
+		flex: 0 0 auto;
+		margin-top: auto;
+		display: flex;
+		align-items: center;
+		gap: 14px;
+	}
+	.player-controls button {
+		border: none;
+		background: var(--card-bg);
+		color: var(--text);
+		width: 40px;
+		height: 40px;
+		border-radius: 50%;
+		font-size: 16px;
+		cursor: pointer;
+		box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+	}
+	.player-controls button:disabled { opacity: 0.3; cursor: default; }
+	#playerPlayBtn { width: 48px; height: 48px; font-size: 18px; background: var(--accent); color: white; }
+	.player-counter {
+		font-size: 12px;
+		color: var(--muted);
+		min-width: 50px;
+		text-align: center;
+	}
+</style>
+
+<header>
+	<div class="tabs">
+		<button class="tab active" id="tab-character" onclick="setTab('character')"></button>
+		<button class="tab" id="tab-location" onclick="setTab('location')"></button>
+		<button class="tab" id="tab-conversation" onclick="setTab('conversation')">💬 <span id="tab-conversation-label"></span></button>
+		<button class="tab" id="tab-player" onclick="setTab('player')">🎭 Table Read Mode</button>
+	</div>
+	<div class="spacer"></div>
+	<select class="lang-select" id="langSelect" onchange="setLanguage(this.value)">
+		<option value="ca">Català</option>
+		<option value="en">English</option>
+		<option value="fr">Français</option>
+		<option value="eu">Euskara</option>
+	</select>
+	<button class="refresh" id="exportBtn" onclick="exportPhotos()"></button>
+	<button class="refresh" id="importBtn" onclick="importPhotos()"></button>
+	<button class="refresh" id="refreshBtn" onclick="requestRefresh()"></button>
+</header>
+<p class="hint" id="hint"></p>
+
+<main id="grid"></main>
+
+<div class="danger-zone" id="dangerZone">
+	<button class="lock-toggle" id="lockToggle" onclick="toggleLock()">🔒</button>
+	<button class="danger-btn" id="clearAllBtn" disabled onclick="requestClearAllPhotos()"></button>
+</div>
+
+<script>
+	let state = %initialData%
+	let activeTab = "character"
+
+	// ---- Idiomes ----
+
+	const I18N = {
+		ca: {
+			tabCharacters: "Personatges",
+			tabLocations: "Localitzacions",
+			tabConversation: "Conversa",
+			refresh: "↻ Actualitza",
+			hint: "Arrossega una imatge des del Finder sobre una targeta, o clica-la i prem ⌘V per enganxar-hi una imatge copiada.",
+			emptyCharacters: "Encara no s'ha detectat cap personatge al guió.",
+			emptyLocations: "Encara no s'ha detectat cap localització al guió.",
+			emptyDialogue: "Encara no s'ha detectat cap diàleg al guió.",
+			dropPlaceholder: "Arrossega una foto aquí, o clica i prem ⌘V",
+			removePhoto: "Elimina la foto",
+			moreImportant: "Més important",
+			lessImportant: "Menys important",
+			prev: "Anterior",
+			playPause: "Reprodueix / Pausa",
+			next: "Següent",
+			exportPhotos: "📤 Exporta fotos",
+			importPhotos: "📥 Importa fotos",
+			sceneTotalTime: "Temps total de l'escena",
+			clearAllPhotos: "Elimina totes les fotos",
+			lockHint: "Desbloqueja per poder eliminar totes les fotos",
+			clearAllConfirmTitle: "Eliminar totes les fotos?",
+			clearAllConfirmText: "S'esborraran totes les fotos de personatges i localitzacions d'aquest guió. Aquesta acció no es pot desfer.",
+			clearAllConfirmButton: "Elimina-ho tot",
+			cancel: "Cancel·la"
+		},
+		en: {
+			tabCharacters: "Characters",
+			tabLocations: "Locations",
+			tabConversation: "Conversation",
+			refresh: "↻ Refresh",
+			hint: "Drag an image from Finder onto a card, or click it and press ⌘V to paste a copied image.",
+			emptyCharacters: "No characters detected in the script yet.",
+			emptyLocations: "No locations detected in the script yet.",
+			emptyDialogue: "No dialogue detected in the script yet.",
+			dropPlaceholder: "Drag a photo here, or click and press ⌘V",
+			removePhoto: "Remove photo",
+			moreImportant: "More important",
+			lessImportant: "Less important",
+			prev: "Previous",
+			playPause: "Play / Pause",
+			next: "Next",
+			exportPhotos: "📤 Export photos",
+			importPhotos: "📥 Import photos",
+			sceneTotalTime: "Total scene time",
+			clearAllPhotos: "Delete all photos",
+			lockHint: "Unlock to be able to delete all photos",
+			clearAllConfirmTitle: "Delete all photos?",
+			clearAllConfirmText: "All character and location photos in this script will be deleted. This action cannot be undone.",
+			clearAllConfirmButton: "Delete everything",
+			cancel: "Cancel"
+		},
+		fr: {
+			tabCharacters: "Personnages",
+			tabLocations: "Lieux",
+			tabConversation: "Conversation",
+			refresh: "↻ Actualiser",
+			hint: "Faites glisser une image depuis le Finder sur une carte, ou cliquez dessus et appuyez sur ⌘V pour coller une image copiée.",
+			emptyCharacters: "Aucun personnage détecté pour le moment dans le scénario.",
+			emptyLocations: "Aucun lieu détecté pour le moment dans le scénario.",
+			emptyDialogue: "Aucun dialogue détecté pour le moment dans le scénario.",
+			dropPlaceholder: "Glissez une photo ici, ou cliquez et appuyez sur ⌘V",
+			removePhoto: "Supprimer la photo",
+			moreImportant: "Plus important",
+			lessImportant: "Moins important",
+			prev: "Précédent",
+			playPause: "Lecture / Pause",
+			next: "Suivant",
+			exportPhotos: "📤 Exporter les photos",
+			importPhotos: "📥 Importer des photos",
+			sceneTotalTime: "Durée totale de la scène",
+			clearAllPhotos: "Supprimer toutes les photos",
+			lockHint: "Déverrouiller pour pouvoir supprimer toutes les photos",
+			clearAllConfirmTitle: "Supprimer toutes les photos ?",
+			clearAllConfirmText: "Toutes les photos des personnages et des lieux de ce scénario seront supprimées. Cette action est irréversible.",
+			clearAllConfirmButton: "Tout supprimer",
+			cancel: "Annuler"
+		},
+		eu: {
+			tabCharacters: "Pertsonaiak",
+			tabLocations: "Kokalekuak",
+			tabConversation: "Elkarrizketa",
+			refresh: "↻ Eguneratu",
+			hint: "Arrastatu irudi bat Finder-etik txartel baten gainera, edo egin klik eta sakatu ⌘V kopiatutako irudi bat itsasteko.",
+			emptyCharacters: "Oraindik ez da pertsonaiarik antzeman gidoian.",
+			emptyLocations: "Oraindik ez da kokalekurik antzeman gidoian.",
+			emptyDialogue: "Oraindik ez da elkarrizketarik antzeman gidoian.",
+			dropPlaceholder: "Arrastatu argazki bat hona, edo egin klik eta sakatu ⌘V",
+			removePhoto: "Ezabatu argazkia",
+			moreImportant: "Garrantzitsuagoa",
+			lessImportant: "Garrantzi gutxiagokoa",
+			prev: "Aurrekoa",
+			playPause: "Erreproduzitu / Pausatu",
+			next: "Hurrengoa",
+			exportPhotos: "📤 Esportatu argazkiak",
+			importPhotos: "📥 Inportatu argazkiak",
+			sceneTotalTime: "Eszenaren guztizko denbora",
+			clearAllPhotos: "Ezabatu argazki guztiak",
+			lockHint: "Desblokeatu argazki guztiak ezabatu ahal izateko",
+			clearAllConfirmTitle: "Argazki guztiak ezabatu?",
+			clearAllConfirmText: "Gidoi honetako pertsonaien eta kokalekuen argazki guztiak ezabatuko dira. Ekintza hau ezin da desegin.",
+			clearAllConfirmButton: "Ezabatu guztia",
+			cancel: "Utzi"
+		}
+	}
+
+	function detectLanguage() {
+		let supported = ["ca", "en", "fr", "eu"]
+		let candidates = (navigator.languages && navigator.languages.length) ? navigator.languages : [navigator.language]
+		for (const candidate of candidates) {
+			let code = (candidate || "").toLowerCase().split("-")[0]
+			if (supported.indexOf(code) >= 0) return code
+		}
+		return "ca"
+	}
+
+	// Buit vol dir "l'usuari encara no ha triat mai idioma": fem servir
+	// l'idioma del sistema. Un cop es tria manualment, es queda desat.
+	let lang = state.language || detectLanguage()
+
+	function t(key) {
+		return (I18N[lang] && I18N[lang][key]) || I18N.ca[key] || key
+	}
+
+	function setLanguage(newLang) {
+		lang = newLang
+		document.getElementById("langSelect").value = lang
+		applyStaticTranslations()
+		render()
+		Beat.call("Beat.custom.setLanguage(" + JSON.stringify(lang) + ")")
+	}
+
+	function applyStaticTranslations() {
+		document.getElementById("langSelect").value = lang
+		document.getElementById("tab-character").textContent = t("tabCharacters")
+		document.getElementById("tab-location").textContent = t("tabLocations")
+		document.getElementById("tab-conversation-label").textContent = t("tabConversation")
+		document.getElementById("refreshBtn").textContent = t("refresh")
+		document.getElementById("hint").textContent = t("hint")
+		document.getElementById("exportBtn").textContent = t("exportPhotos")
+		document.getElementById("importBtn").textContent = t("importPhotos")
+		document.getElementById("clearAllBtn").textContent = t("clearAllPhotos")
+		document.getElementById("lockToggle").title = t("lockHint")
+	}
+
+	function setTab(tab) {
+		activeTab = tab
+		for (const t of ["character", "location", "conversation", "player"]) {
+			document.getElementById("tab-" + t).classList.toggle("active", tab === t)
+		}
+		document.getElementById("hint").style.display = (tab === "character" || tab === "location") ? "block" : "none"
+		document.getElementById("dangerZone").style.display = (tab === "character") ? "flex" : "none"
+
+		pausePlayer()
+		if (tab === "player") {
+			playerSteps = buildPlayerSteps()
+			playerIndex = -1 // encara no ha començat: cap bombolla ni text visible
+		}
+
+		render()
+	}
+
+	function namesFor(tab) {
+		return tab === "character" ? state.characters : state.locations
+	}
+	function photosFor(tab) {
+		return tab === "character" ? state.characterPhotos : state.locationPhotos
+	}
+
+	function render() {
+		let grid = document.getElementById("grid")
+		grid.classList.toggle("chat", activeTab === "conversation")
+		grid.classList.toggle("player", activeTab === "player")
+		grid.innerHTML = ""
+
+		if (activeTab === "conversation") {
+			renderConversation(grid)
+			return
+		}
+
+		if (activeTab === "player") {
+			renderPlayerView(grid)
+			return
+		}
+
+		let names = namesFor(activeTab)
+		let photos = photosFor(activeTab)
+
+		if (!names || names.length === 0) {
+			let empty = document.createElement("div")
+			empty.className = "empty"
+			empty.textContent = activeTab === "character" ? t("emptyCharacters") : t("emptyLocations")
+			grid.appendChild(empty)
+			return
+		}
+
+		names.forEach((name, index) => {
+			let card = buildCard(activeTab, name, photos[name], index, names.length)
+			if (activeTab === selectedKind && name === selectedName) {
+				card.querySelector(".photo-slot").classList.add("selected")
+			}
+			grid.appendChild(card)
+		})
+	}
+
+	function initials(name) {
+		let parts = name.trim().split(/\s+/).filter(p => p.length)
+		if (parts.length === 0) return "?"
+		if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase()
+		return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+	}
+
+	function buildAvatar(name) {
+		let photo = state.characterPhotos[name]
+		if (photo) {
+			let img = document.createElement("img")
+			img.className = "avatar"
+			img.src = photo
+			return img
+		}
+		let placeholder = document.createElement("div")
+		placeholder.className = "avatar"
+		placeholder.textContent = initials(name)
+		return placeholder
+	}
+
+	function renderConversation(container) {
+		if (!state.conversation || state.conversation.length === 0) {
+			let empty = document.createElement("div")
+			empty.className = "empty"
+			empty.textContent = t("emptyDialogue")
+			container.appendChild(empty)
+			return
+		}
+
+		for (const scene of state.conversation) {
+			let block = document.createElement("div")
+			block.className = "scene-block"
+
+			let bg = state.locationPhotos[scene.location]
+
+			let header = document.createElement("div")
+			if (bg) {
+				header.className = "scene-header-banner"
+				header.style.backgroundImage = 'url("' + bg + '")'
+			} else {
+				header.className = "scene-header-plain"
+			}
+
+			let heading = document.createElement("div")
+			heading.className = "scene-heading"
+			heading.textContent = scene.heading
+			header.appendChild(heading)
+
+			block.appendChild(header)
+
+			// Perquè hi hagi més espai quan canvia qui parla (i les línies
+			// d'acció sempre "trenquen" l'agrupament, ja que no són ningú
+			// en concret parlant).
+			let previousCharacter = null
+
+			for (const entry of scene.entries) {
+				if (entry.kind === "action") {
+					let notice = document.createElement("div")
+					notice.className = "scene-action"
+					notice.textContent = entry.text
+					block.appendChild(notice)
+					previousCharacter = null
+					continue
+				}
+
+				let row = document.createElement("div")
+				row.className = "bubble-row side-" + entry.side
+				if (entry.character !== previousCharacter) row.classList.add("new-speaker")
+				previousCharacter = entry.character
+
+				row.appendChild(buildAvatar(entry.character))
+
+				let bubble = document.createElement("div")
+				bubble.className = "bubble"
+				if (entry.side === "b") {
+					bubble.classList.add("c" + ((entry.colorIndex || 0) % 6))
+				}
+
+				let nameEl = document.createElement("div")
+				nameEl.className = "character-name"
+				nameEl.textContent = entry.character
+				bubble.appendChild(nameEl)
+
+				if (entry.parenthetical) {
+					let paren = document.createElement("div")
+					paren.className = "parenthetical"
+					paren.textContent = "(" + entry.parenthetical + ")"
+					bubble.appendChild(paren)
+				}
+
+				let text = document.createElement("div")
+				text.className = "text"
+				text.textContent = entry.text
+				bubble.appendChild(text)
+
+				if (entry.timestamp) {
+					let time = document.createElement("div")
+					time.className = "bubble-time"
+					time.textContent = entry.timestamp
+					bubble.appendChild(time)
+				}
+
+				row.appendChild(bubble)
+				block.appendChild(row)
+			}
+
+			if (scene.totalTime) {
+				let totalTime = document.createElement("div")
+				totalTime.className = "scene-total-time"
+				totalTime.textContent = t("sceneTotalTime") + ": " + scene.totalTime
+				block.appendChild(totalTime)
+			}
+
+			container.appendChild(block)
+		}
+	}
+
+	// ---- Player: mostra els diàlegs un a un, com si es reproduïssin ----
+
+	let playerSteps = []
+	let playerIndex = -1 // -1 = encara no s'ha mostrat cap frase
+	let playing = false
+	let playTimer = null
+
+	// Aplana totes les escenes en una llista de "passos" (un per línia de
+	// diàleg), i calcula per a cada escena quins personatges hi surten i
+	// en quin ordre s'han de mostrar els cercles (el líder primer).
+	function buildPlayerSteps() {
+		let steps = []
+		if (!state.conversation) return steps
+
+		for (const scene of state.conversation) {
+			// El Player només parla de diàlegs: els avisos d'acció de la
+			// Conversa (kind "action") no hi compten.
+			let dialogueEntries = scene.entries.filter(e => e.kind !== "action")
+
+			let present = []
+			let seen = new Set()
+			for (const entry of dialogueEntries) {
+				if (!seen.has(entry.character)) {
+					seen.add(entry.character)
+					present.push({ character: entry.character, side: entry.side, colorIndex: entry.colorIndex })
+				}
+			}
+			present.sort((x, y) => {
+				if (x.side !== y.side) return (x.side === "a") ? -1 : 1
+				return (x.colorIndex || 0) - (y.colorIndex || 0)
+			})
+
+			for (const entry of dialogueEntries) {
+				steps.push({
+					heading: scene.heading,
+					location: scene.location,
+					present: present,
+					character: entry.character,
+					text: entry.text,
+					parenthetical: entry.parenthetical,
+					side: entry.side,
+					colorIndex: entry.colorIndex
+				})
+			}
+		}
+
+		return steps
+	}
+
+	// Estimació de temps de lectura per caràcters (sense espais), no per
+	// paraules: així "sí" i "extraordinàriament" no triguen el mateix.
+	// ~80ms/caràcter equival aproximadament a una parla d'uns 150 mots/min.
+	function estimateDurationMs(text) {
+		let chars = (text || "").replace(/\s+/g, "").length
+		return Math.max(900, Math.round(chars * 80))
+	}
+
+	function renderPlayerView(container) {
+		if (!playerSteps.length) {
+			let empty = document.createElement("div")
+			empty.className = "empty"
+			empty.textContent = t("emptyDialogue")
+			container.appendChild(empty)
+			return
+		}
+
+		let wrap = document.createElement("div")
+		wrap.className = "player-wrap"
+		wrap.id = "playerWrap"
+
+		let bg = document.createElement("div")
+		bg.className = "player-bg"
+		bg.id = "playerBg"
+		wrap.appendChild(bg)
+
+		let content = document.createElement("div")
+		content.className = "player-content"
+
+		let heading = document.createElement("div")
+		heading.className = "scene-heading"
+		heading.id = "playerHeading"
+		content.appendChild(heading)
+
+		let circles = document.createElement("div")
+		circles.className = "player-circles"
+		circles.id = "playerCircles"
+		content.appendChild(circles)
+
+		let stage = document.createElement("div")
+		stage.className = "player-stage"
+		stage.id = "playerStage"
+
+		let tail = document.createElement("div")
+		tail.className = "stage-tail"
+		tail.id = "stageTail"
+		stage.appendChild(tail)
+
+		let nameEl = document.createElement("div")
+		nameEl.className = "player-name"
+		nameEl.id = "playerName"
+		stage.appendChild(nameEl)
+
+		let parenEl = document.createElement("div")
+		parenEl.className = "player-parenthetical"
+		parenEl.id = "playerParenthetical"
+		stage.appendChild(parenEl)
+
+		let textEl = document.createElement("div")
+		textEl.className = "player-text"
+		textEl.id = "playerText"
+		stage.appendChild(textEl)
+
+		content.appendChild(stage)
+
+		let controls = document.createElement("div")
+		controls.className = "player-controls"
+
+		let prevBtn = document.createElement("button")
+		prevBtn.textContent = "⏮"
+		prevBtn.title = t("prev")
+		prevBtn.id = "playerPrev"
+		prevBtn.addEventListener("click", function () { prevBtn.blur(); playerGoToStart() })
+
+		let playBtn = document.createElement("button")
+		playBtn.textContent = "▶"
+		playBtn.title = t("playPause")
+		playBtn.id = "playerPlayBtn"
+		playBtn.addEventListener("click", function () { playBtn.blur(); togglePlayerAutoplay() })
+
+		let nextBtn = document.createElement("button")
+		nextBtn.textContent = "→"
+		nextBtn.title = t("next")
+		nextBtn.id = "playerNext"
+		nextBtn.addEventListener("click", function () { nextBtn.blur(); playerNext() })
+
+		let counter = document.createElement("div")
+		counter.className = "player-counter"
+		counter.id = "playerCounter"
+
+		controls.appendChild(prevBtn)
+		controls.appendChild(playBtn)
+		controls.appendChild(nextBtn)
+		controls.appendChild(counter)
+		content.appendChild(controls)
+
+		wrap.appendChild(content)
+		container.appendChild(wrap)
+		renderPlayerStep()
+	}
+
+	// Actualitza el fons amb una petita fosa, i només quan la localització
+	// canvia realment (no cal refer-lo cada vegada que s'avança de frase
+	// dins la mateixa escena).
+	function setPlayerBackground(location) {
+		let bgEl = document.getElementById("playerBg")
+		if (!bgEl) return
+
+		let url = state.locationPhotos[location]
+		let image = url ? 'url("' + url + '")' : "none"
+		if (bgEl.dataset.current === image) return
+
+		bgEl.style.opacity = 0
+		setTimeout(function () {
+			bgEl.style.backgroundImage = image
+			bgEl.dataset.current = image
+			bgEl.style.opacity = 1
+		}, 300)
+	}
+
+	// Crea la filera de cercles només quan canvien els personatges presents
+	// (escena nova); si són els mateixos, no es recreen mai, perquè és
+	// justament el que fa que no es puguin moure de lloc.
+	function ensurePlayerCircles(step) {
+		let circlesEl = document.getElementById("playerCircles")
+		let key = step.present.map(p => p.character).join("|")
+		if (circlesEl.dataset.key === key) return circlesEl
+
+		circlesEl.innerHTML = ""
+		circlesEl.dataset.key = key
+
+		for (const p of step.present) {
+			let col = document.createElement("div")
+			col.className = "player-circle-col"
+
+			let circle = document.createElement("div")
+			circle.className = "player-circle"
+			circle.dataset.character = p.character
+			circle.dataset.side = p.side
+			circle.dataset.colorIndex = (p.colorIndex || 0) % 6
+
+			let avatar = buildAvatar(p.character)
+			avatar.classList.add("player-avatar")
+			circle.appendChild(avatar)
+
+			let caption = document.createElement("div")
+			caption.className = "player-caption"
+			caption.textContent = p.character
+
+			col.appendChild(circle)
+			col.appendChild(buildTimerRing())
+			col.appendChild(caption)
+			circlesEl.appendChild(col)
+		}
+
+		return circlesEl
+	}
+
+	const TIMER_RING_CIRCUMFERENCE = 2 * Math.PI * 46
+
+	// SVG del cronòmetre circular. Fem servir SVG (i no un simple div amb
+	// "conic-gradient") perquè es pot animar amb una transició CSS normal
+	// de "stroke-dashoffset", sense necessitar cap bucle de JavaScript.
+	function buildTimerRing() {
+		const svgNS = "http://www.w3.org/2000/svg"
+		let svg = document.createElementNS(svgNS, "svg")
+		svg.setAttribute("class", "timer-ring")
+		svg.setAttribute("viewBox", "0 0 100 100")
+
+		let bg = document.createElementNS(svgNS, "circle")
+		bg.setAttribute("class", "timer-ring-bg")
+		bg.setAttribute("cx", "50")
+		bg.setAttribute("cy", "50")
+		bg.setAttribute("r", "46")
+
+		let fg = document.createElementNS(svgNS, "circle")
+		fg.setAttribute("class", "timer-ring-fg")
+		fg.setAttribute("cx", "50")
+		fg.setAttribute("cy", "50")
+		fg.setAttribute("r", "46")
+		fg.style.strokeDasharray = String(TIMER_RING_CIRCUMFERENCE)
+		fg.style.strokeDashoffset = String(TIMER_RING_CIRCUMFERENCE)
+
+		svg.appendChild(bg)
+		svg.appendChild(fg)
+		return svg
+	}
+
+	// Amaga i reinicia tots els cronòmetres de la filera (s'usa quan es
+	// canvia de frase, perquè només el de qui parla ara ha d'estar visible).
+	function resetTimerRings(circlesEl) {
+		for (const ring of circlesEl.querySelectorAll(".timer-ring")) {
+			ring.classList.remove("visible")
+			let fg = ring.querySelector(".timer-ring-fg")
+			if (fg) {
+				fg.style.transition = "none"
+				fg.style.strokeDashoffset = String(TIMER_RING_CIRCUMFERENCE)
+			}
+		}
+	}
+
+	// Comença a omplir el cronòmetre del cercle indicat, al ritme exacte
+	// de "durationMs" — el mateix temps que fem servir per decidir quan
+	// avançar en el mode automàtic.
+	function startTimerRing(circleEl, durationMs) {
+		if (!circleEl) return
+		let ring = circleEl.parentElement.querySelector(".timer-ring")
+		let fg = ring && ring.querySelector(".timer-ring-fg")
+		if (!ring || !fg) return
+
+		// El cronòmetre agafa el mateix color que el personatge que parla
+		// (el mateix codi de colors que la Conversa i l'anell del cercle).
+		fg.classList.remove("ring-a", "ring-c0", "ring-c1", "ring-c2", "ring-c3", "ring-c4", "ring-c5")
+		fg.classList.add(circleEl.dataset.side === "a" ? "ring-a" : ("ring-c" + circleEl.dataset.colorIndex))
+
+		fg.style.transition = "none"
+		fg.style.strokeDashoffset = String(TIMER_RING_CIRCUMFERENCE)
+		ring.classList.add("visible")
+
+		void fg.getBoundingClientRect() // força el reflow abans d'animar
+
+		fg.style.transition = "stroke-dashoffset " + durationMs + "ms linear"
+		fg.style.strokeDashoffset = "0"
+	}
+
+	// Encén l'anell del cercle que parla (i apaga els altres). Com que els
+	// cercles ja existeixen al DOM, el canvi de classe es veu com una
+	// transició suau, no com un tall.
+	function highlightActiveCircle(circlesEl, activeCharacter) {
+		let activeEl = null
+		for (const circle of circlesEl.querySelectorAll(".player-circle")) {
+			circle.classList.remove("active", "active-a", "active-c0", "active-c1", "active-c2", "active-c3", "active-c4", "active-c5")
+			if (activeCharacter && circle.dataset.character === activeCharacter) {
+				circle.classList.add("active")
+				circle.classList.add(circle.dataset.side === "a" ? "active-a" : ("active-c" + circle.dataset.colorIndex))
+				activeEl = circle
+			}
+		}
+		return activeEl
+	}
+
+	// Desplaça la bombolla de text sota l'avatar de qui parla i hi posa la
+	// cua justa a sota seu. Calculem totes dues coses a partir de la
+	// posició OBJECTIU (final) de la bombolla, no rellegint la seva posició
+	// actual amb getBoundingClientRect() — com que "margin-left" té una
+	// transició, just després de canviar-lo encara es llegiria la posició
+	// vella (no ha acabat de moure's), i la cua quedava mal col·locada.
+	function positionStageAndTail(activeEl) {
+		let stage = document.getElementById("playerStage")
+		let tail = document.getElementById("stageTail")
+		let content = document.querySelector(".player-content")
+		if (!stage || !tail || !content) return
+
+		let contentRect = content.getBoundingClientRect()
+		let leftBound = contentRect.left + 16
+		let rightBound = contentRect.right - 16
+		let stageWidth = stage.offsetWidth
+
+		let targetCenter
+		if (activeEl) {
+			let circleRect = activeEl.getBoundingClientRect()
+			targetCenter = circleRect.left + circleRect.width / 2
+		} else {
+			targetCenter = (leftBound + rightBound) / 2
+		}
+
+		let desiredLeftEdge = targetCenter - stageWidth / 2
+		let clampedLeftEdge = Math.max(leftBound, Math.min(rightBound - stageWidth, desiredLeftEdge))
+		stage.style.marginLeft = Math.max(0, clampedLeftEdge - leftBound) + "px"
+
+		if (!activeEl) {
+			tail.classList.remove("visible")
+			return
+		}
+
+		// La cua es col·loca respecte a "clampedLeftEdge" (la posició final
+		// de la bombolla), no respecte a stage.getBoundingClientRect().
+		let tailLeft = targetCenter - clampedLeftEdge - 9
+		let minTailLeft = 14
+		let maxTailLeft = Math.max(minTailLeft, stageWidth - 14 - 18)
+		tailLeft = Math.max(minTailLeft, Math.min(maxTailLeft, tailLeft))
+
+		tail.style.left = tailLeft + "px"
+		tail.classList.add("visible")
+	}
+
+	// Cada crida a renderPlayerStep() incrementa aquest comptador. El
+	// setTimeout de 300ms de dins comprova, quan arriba el moment, si
+	// encara és la crida més recent — si no ho és (perquè s'ha canviat de
+	// frase o de mode pel mig), no fa res. Sense això, si canviaves de
+	// manual a automàtic (o a l'inrevés) massa de pressa, dues crides
+	// enllaçades podien acabar escrivint contingut barrejat/desordenat
+	// (el "tornar-se boig").
+	let playerRenderToken = 0
+
+	function renderPlayerStep() {
+		if (!playerSteps.length) return
+
+		playerRenderToken++
+		let myToken = playerRenderToken
+
+		// Abans de començar (índex -1): es veuen els cercles de la primera
+		// escena, cap encès, i encara no hi ha ni nom ni text.
+		let idle = (playerIndex === -1)
+		let step = idle ? playerSteps[0] : playerSteps[playerIndex]
+		if (!step) return
+
+		setPlayerBackground(step.location)
+		document.getElementById("playerHeading").textContent = step.heading
+
+		let circlesEl = ensurePlayerCircles(step)
+
+		// La bombolla de text es fon uns instants abans de canviar de
+		// contingut, en comptes de canviar-lo de cop.
+		let stage = document.getElementById("playerStage")
+		stage.style.opacity = 0
+
+		setTimeout(function () {
+			if (myToken !== playerRenderToken) return // una altra frase ha pres el relleu mentrestant
+
+			let activeEl = highlightActiveCircle(circlesEl, idle ? null : step.character)
+
+			resetTimerRings(circlesEl)
+			if (!idle && activeEl) {
+				startTimerRing(activeEl, estimateDurationMs(step.text))
+			}
+
+			stage.classList.remove("side-a", "side-b", "c0", "c1", "c2", "c3", "c4", "c5")
+			if (!idle) {
+				stage.classList.add(step.side === "a" ? "side-a" : "side-b")
+				if (step.side === "b") stage.classList.add("c" + ((step.colorIndex || 0) % 6))
+			}
+
+			document.getElementById("playerName").textContent = idle ? "" : step.character
+
+			let parenEl = document.getElementById("playerParenthetical")
+			parenEl.textContent = (!idle && step.parenthetical) ? "(" + step.parenthetical + ")" : ""
+			parenEl.style.display = (!idle && step.parenthetical) ? "block" : "none"
+
+			document.getElementById("playerText").textContent = idle ? "" : step.text
+
+			positionStageAndTail(idle ? null : activeEl)
+			stage.style.opacity = 1
+		}, 300)
+
+		document.getElementById("playerCounter").textContent = (playerIndex + 1) + " / " + playerSteps.length
+		document.getElementById("playerPrev").disabled = idle
+		document.getElementById("playerNext").disabled = (playerIndex === playerSteps.length - 1)
+	}
+
+	function playerNext() {
+		pausePlayer()
+		if (playerIndex < playerSteps.length - 1) {
+			playerIndex++
+			renderPlayerStep()
+		}
+	}
+
+	function playerPrevious() {
+		pausePlayer()
+		if (playerIndex > -1) {
+			playerIndex--
+			renderPlayerStep()
+		}
+	}
+
+	// Torna directament al principi (abans de la primera frase), no pas a
+	// pas cap enrere.
+	function playerGoToStart() {
+		pausePlayer()
+		if (playerIndex !== -1) {
+			playerIndex = -1
+			renderPlayerStep()
+		}
+	}
+
+	function togglePlayerAutoplay() {
+		if (playing) pausePlayer(); else startPlayerAutoplay()
+	}
+
+	function startPlayerAutoplay() {
+		if (playerSteps.length && playerIndex >= playerSteps.length - 1) {
+			playerIndex = -1
+		}
+		if (playerIndex === -1) playerIndex = 0
+
+		playing = true
+		updatePlayerPlayButton()
+
+		// Sempre, encara que ja estiguéssim en aquesta mateixa frase (per
+		// exemple, venint del mode manual): reiniciem la seva visualització
+		// perquè el cronòmetre visual comenci de zero, igual que el
+		// temporitzador intern que decideix quan avançar.
+		renderPlayerStep()
+		scheduleNextPlayerStep()
+	}
+
+	// En mode automàtic, esperem: els 300ms que triga a aparèixer el text
+	// (igual que a renderPlayerStep) + el temps que triga el cronòmetre a
+	// omplir-se + 1 segon de pausa un cop acabat, i llavors passem a la
+	// frase següent.
+	const AUTOPLAY_PAUSE_MS = 1000
+
+	function scheduleNextPlayerStep() {
+		clearTimeout(playTimer)
+		if (!playing) return
+
+		let step = playerSteps[playerIndex]
+		if (!step) { pausePlayer(); return }
+
+		let totalDelay = 300 + estimateDurationMs(step.text) + AUTOPLAY_PAUSE_MS
+
+		playTimer = setTimeout(function () {
+			if (!playing) return
+			if (playerIndex < playerSteps.length - 1) {
+				playerIndex++
+				renderPlayerStep()
+				scheduleNextPlayerStep()
+			} else {
+				pausePlayer()
+			}
+		}, totalDelay)
+	}
+
+	function pausePlayer() {
+		playing = false
+		clearTimeout(playTimer)
+		updatePlayerPlayButton()
+	}
+
+	function updatePlayerPlayButton() {
+		let btn = document.getElementById("playerPlayBtn")
+		if (btn) btn.textContent = playing ? "⏸" : "▶"
+	}
+
+	document.addEventListener("keydown", function (e) {
+		if (activeTab !== "player") return
+		if (e.code === "ArrowRight" || e.code === "Space") {
+			e.preventDefault()
+			playerNext()
+		} else if (e.code === "ArrowLeft") {
+			e.preventDefault()
+			playerPrevious()
+		}
+	})
+
+	// La finestra de plugin de Beat no implementa el diàleg natiu de WebKit,
+	// així que "input type=file" no obre res. Fem servir arrossegar+deixar
+	// anar i enganxar (⌘V) en el seu lloc, que no depenen d'aquell diàleg.
+	// Guardem la selecció per nom (no per node del DOM), ja que la graella
+	// es reconstrueix sencera cada vegada que es desa una foto.
+	let selectedKind = null
+	let selectedName = null
+
+	function buildCard(kind, name, dataURI, index, total) {
+		let card = document.createElement("div")
+		card.className = "card"
+		card.dataset.name = name
+
+		let slot = document.createElement("div")
+		slot.className = "photo-slot"
+		slot.dataset.kind = kind
+		slot.dataset.name = name
+
+		if (kind === "character") {
+			let badge = document.createElement("div")
+			badge.className = "rank-badge"
+			badge.textContent = index + 1
+			slot.appendChild(badge)
+		}
+
+		if (dataURI) {
+			let img = document.createElement("img")
+			img.src = dataURI
+			slot.appendChild(img)
+
+			let removeBtn = document.createElement("button")
+			removeBtn.className = "remove-btn"
+			removeBtn.textContent = "✕"
+			removeBtn.title = t("removePhoto")
+			removeBtn.addEventListener("click", function (e) {
+				e.stopPropagation()
+				removePhoto(kind, name)
+			})
+			slot.appendChild(removeBtn)
+		} else {
+			let placeholder = document.createElement("div")
+			placeholder.className = "placeholder"
+			placeholder.textContent = t("dropPlaceholder")
+			slot.appendChild(placeholder)
+		}
+
+		slot.addEventListener("click", function () {
+			let previous = document.querySelector(".photo-slot.selected")
+			if (previous) previous.classList.remove("selected")
+			selectedKind = kind
+			selectedName = name
+			slot.classList.add("selected")
+		})
+
+		slot.addEventListener("dragover", function (e) {
+			e.preventDefault()
+			slot.classList.add("dragover")
+		})
+		slot.addEventListener("dragleave", function () {
+			slot.classList.remove("dragover")
+		})
+		slot.addEventListener("drop", function (e) {
+			e.preventDefault()
+			slot.classList.remove("dragover")
+			let file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]
+			if (file) handleFile(kind, name, file)
+		})
+
+		card.appendChild(slot)
+
+		if (kind === "character") {
+			// Barra ◀ NOM ▶: la fletxa dreta desplaça el personatge una
+			// posició cap a la dreta (menys important), l'esquerra el fa
+			// més important.
+			let nav = document.createElement("div")
+			nav.className = "name-nav"
+
+			let left = document.createElement("button")
+			left.className = "nav-btn"
+			left.textContent = "◀"
+			left.title = t("moreImportant")
+			left.disabled = (index === 0)
+			left.addEventListener("click", () => moveCharacter(name, -1))
+
+			let nameLabel = document.createElement("div")
+			nameLabel.className = "name-label"
+			nameLabel.textContent = name
+
+			let right = document.createElement("button")
+			right.className = "nav-btn"
+			right.textContent = "▶"
+			right.title = t("lessImportant")
+			right.disabled = (index === total - 1)
+			right.addEventListener("click", () => moveCharacter(name, 1))
+
+			nav.appendChild(left)
+			nav.appendChild(nameLabel)
+			nav.appendChild(right)
+			card.appendChild(nav)
+		} else {
+			let label = document.createElement("div")
+			label.className = "name"
+			label.textContent = name
+			card.appendChild(label)
+		}
+
+		return card
+	}
+
+	// Anima el reordenament amb la tècnica FLIP: mesurem la posició de cada
+	// targeta abans de canviar l'ordre, les repintem ja a la posició nova,
+	// les "teletransportem" visualment cap a la posició antiga (sense
+	// transició) i les deixem lliscar cap a la nova. Fem servir una
+	// lectura de mida (offsetWidth) per forçar que el navegador pinti la
+	// posició antiga abans d'activar la transició — amb
+	// requestAnimationFrame no n'hi havia prou, perquè es pot ajornar si
+	// la finestra del plugin no té el focus, i llavors no es veia cap
+	// moviment.
+	const REORDER_ANIM_MS = 500
+
+	function moveCharacter(name, direction) {
+		let order = state.characters.slice()
+		let index = order.indexOf(name)
+		let target = index + direction
+		if (index < 0 || target < 0 || target >= order.length) return
+
+		order[index] = order[target]
+		order[target] = name
+
+		let grid = document.getElementById("grid")
+		let firstRects = new Map()
+		for (const card of grid.querySelectorAll(".card")) {
+			firstRects.set(card.dataset.name, card.getBoundingClientRect())
+		}
+
+		state.characters = order
+		render()
+
+		let toAnimate = []
+		for (const card of grid.querySelectorAll(".card")) {
+			let first = firstRects.get(card.dataset.name)
+			if (!first) continue
+
+			let last = card.getBoundingClientRect()
+			let dx = first.left - last.left
+			let dy = first.top - last.top
+			if (!dx && !dy) continue
+
+			card.style.transition = "none"
+			card.style.transform = "translate(" + dx + "px," + dy + "px)"
+			toAnimate.push(card)
+		}
+
+		if (toAnimate.length) void grid.offsetWidth
+
+		for (const card of toAnimate) {
+			card.style.transition = "transform " + REORDER_ANIM_MS + "ms ease"
+			card.style.transform = ""
+		}
+
+		// Important: no avisem el plugin natiu fins que l'animació hagi
+		// acabat de veritat. Si ho féssim immediatament, la resposta
+		// (Beat.custom.saveOrder crida setData, que fa un altre render())
+		// arriba de seguida i talla el lliscament a mig camí — semblava
+		// "gairebé instantani" perquè l'animació quedava interrompuda.
+		setTimeout(function () {
+			Beat.call("Beat.custom.saveOrder(" + JSON.stringify(order) + ")")
+		}, REORDER_ANIM_MS + 50)
+	}
+
+	document.addEventListener("paste", function (e) {
+		if (!selectedName) return
+		let items = (e.clipboardData && e.clipboardData.files) || []
+		if (items.length === 0) return
+		e.preventDefault()
+		handleFile(selectedKind, selectedName, items[0])
+	})
+
+	// Redimensiona i comprimeix la imatge amb un <canvas> abans d'enviar-la,
+	// perquè la foto es desa incrustada (base64) dins del propi fitxer .fountain.
+	function handleFile(kind, name, file) {
+		if (!file.type || file.type.indexOf("image/") !== 0) return
+
+		let reader = new FileReader()
+		reader.onload = function () {
+			let image = new Image()
+			image.onload = function () {
+				const maxSide = 640
+				let w = image.width
+				let h = image.height
+				if (w > h && w > maxSide) { h = Math.round(h * maxSide / w); w = maxSide }
+				else if (h > maxSide) { w = Math.round(w * maxSide / h); h = maxSide }
+
+				let canvas = document.createElement("canvas")
+				canvas.width = w
+				canvas.height = h
+				canvas.getContext("2d").drawImage(image, 0, 0, w, h)
+
+				let dataURI = canvas.toDataURL("image/jpeg", 0.85)
+				savePhoto(kind, name, dataURI)
+			}
+			image.src = reader.result
+		}
+		reader.readAsDataURL(file)
+	}
+
+	function savePhoto(kind, name, dataURI) {
+		let photos = photosFor(kind)
+		photos[name] = dataURI
+		render()
+		Beat.call("Beat.custom.savePhoto(" + JSON.stringify(kind) + "," + JSON.stringify(name) + "," + JSON.stringify(dataURI) + ")")
+	}
+
+	function removePhoto(kind, name) {
+		let photos = photosFor(kind)
+		delete photos[name]
+		render()
+		Beat.call("Beat.custom.removePhoto(" + JSON.stringify(kind) + "," + JSON.stringify(name) + ")")
+	}
+
+	function requestRefresh() {
+		Beat.call("Beat.custom.refresh()")
+	}
+
+	function exportPhotos() {
+		Beat.call("Beat.custom.exportPhotos()")
+	}
+
+	function importPhotos() {
+		Beat.call("Beat.custom.importPhotos()")
+	}
+
+	// ---- Eliminar totes les fotos (cadenat + confirmació) ----
+
+	// El botó d'eliminar comença sempre bloquejat, encara que canviïs de
+	// pestanya i tornis: cal desbloquejar-lo cada vegada abans de fer-lo
+	// servir, per evitar clics accidentals.
+	let dangerUnlocked = false
+
+	function toggleLock() {
+		dangerUnlocked = !dangerUnlocked
+		document.getElementById("lockToggle").textContent = dangerUnlocked ? "🔓" : "🔒"
+		document.getElementById("clearAllBtn").disabled = !dangerUnlocked
+	}
+
+	function requestClearAllPhotos() {
+		if (!dangerUnlocked) return
+		showConfirmModal(t("clearAllConfirmTitle"), t("clearAllConfirmText"), t("clearAllConfirmButton"), function () {
+			state.characterPhotos = {}
+			state.locationPhotos = {}
+			dangerUnlocked = false
+			document.getElementById("lockToggle").textContent = "🔒"
+			document.getElementById("clearAllBtn").disabled = true
+			render()
+			Beat.call("Beat.custom.clearAllPhotos()")
+		})
+	}
+
+	// Modal propi, en lloc de "confirm()" del navegador: la finestra de
+	// plugin de Beat no implementa els diàlegs natius de WebKit (el mateix
+	// motiu pel qual el selector de fitxers no funciona), així que
+	// "confirm()" no mostraria res.
+	function showConfirmModal(title, text, confirmLabel, onConfirm) {
+		let overlay = document.createElement("div")
+		overlay.className = "modal-overlay"
+
+		let box = document.createElement("div")
+		box.className = "modal-box"
+
+		let h = document.createElement("h3")
+		h.textContent = title
+		let p = document.createElement("p")
+		p.textContent = text
+
+		let actions = document.createElement("div")
+		actions.className = "modal-actions"
+
+		let cancelBtn = document.createElement("button")
+		cancelBtn.className = "modal-cancel"
+		cancelBtn.textContent = t("cancel")
+		cancelBtn.addEventListener("click", function () { overlay.remove() })
+
+		let confirmBtn = document.createElement("button")
+		confirmBtn.className = "modal-confirm"
+		confirmBtn.textContent = confirmLabel
+		confirmBtn.addEventListener("click", function () {
+			overlay.remove()
+			onConfirm()
+		})
+
+		actions.appendChild(cancelBtn)
+		actions.appendChild(confirmBtn)
+		box.appendChild(h)
+		box.appendChild(p)
+		box.appendChild(actions)
+		overlay.appendChild(box)
+		document.body.appendChild(overlay)
+	}
+
+	// Cridat des del plugin (Beat.custom.refresh) amb tota la informació
+	// recalculada: personatges, localitzacions, fotos i la conversa
+	function setData(data) {
+		state = data
+		render()
+	}
+
+	applyStaticTranslations()
+	// Perquè el títol natiu de la finestra (que no forma part de la pàgina
+	// web) coincideixi amb l'idioma detectat, també la primera vegada.
+	Beat.call("Beat.custom.setLanguage(" + JSON.stringify(lang) + ")")
+	render()
+</script>

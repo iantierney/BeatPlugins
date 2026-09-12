@@ -1,0 +1,435 @@
+/*
+
+Table Read Tools
+Description: Add character and location photos, browse dialogue as conversations, and run visual table reads.
+Version: 1.0.0
+Copyright: Moiz i Bartra Produccions, SL & El Català Emprenyat 2026
+Image: screenshot.png
+
+<Description>
+	<p>Prepare and run visual table reads directly in Beat.</p>
+	<ul>
+		<li>Add portable photos to characters and locations.</li>
+		<li>Browse each scene as a chat-style conversation.</li>
+		<li>Reorder characters by importance.</li>
+		<li>Present dialogue in automatic or manual table-read mode.</li>
+		<li>Use the interface in Catalan, English, French, or Basque.</li>
+		<li>Export and import photo collections between screenplays.</li>
+	</ul>
+	<p>Photos and character order are stored in the screenplay, and the plugin works entirely offline.</p>
+</Description>
+
+*/
+
+const SETTING_CHARACTER_PHOTOS = "characterPhotos"
+const SETTING_LOCATION_PHOTOS = "locationPhotos"
+const SETTING_CHARACTER_ORDER = "characterOrder"
+
+function getCharacterNames() {
+	let characterData = Beat.characterData()
+	let charactersAndLines = characterData.allCharactersAndLines()
+	return Object.keys(charactersAndLines).sort()
+}
+
+function loadCharacterOrder() {
+	return Beat.getDocumentSetting(SETTING_CHARACTER_ORDER) || []
+}
+
+// Combina l'ordre d'importància desat per l'usuari amb els personatges
+// que encara no s'hi han afegit (es posen al final, per ordre alfabètic),
+// perquè sempre hi hagi un ordre complet encara que el guió hagi canviat.
+function effectiveCharacterOrder() {
+	let saved = loadCharacterOrder()
+	let all = getCharacterNames()
+	let allSet = new Set(all)
+	let savedSet = new Set(saved)
+
+	let ordered = saved.filter(name => allSet.has(name))
+	for (const name of all) {
+		if (!savedSet.has(name)) ordered.push(name)
+	}
+	return ordered
+}
+
+// Mateixa heurística que fa servir el plugin oficial "List Locations":
+// separa la capçalera d'escena pel primer espai (per treure INT./EXT.)
+// i pel darrer " - " (per treure el moment del dia).
+function extractLocation(headingString) {
+	let string = headingString.toUpperCase()
+	let firstSpace = string.indexOf(" ")
+	if (firstSpace < 0) return string.trim()
+
+	let headings = string.substring(firstSpace).split(" - ")
+	let location = ""
+
+	if (headings.length > 1) {
+		for (let i = 0; i < headings.length - 1; i++) {
+			location += headings[i] + " "
+			if (i != headings.length - 2) location += "- "
+		}
+	} else {
+		location = headings[0]
+	}
+
+	return location.trim()
+}
+
+// Ordre d'aparició al guió (no alfabètic): la primera localització que
+// surt és la primera de la llista, i així successivament.
+function getLocationNames() {
+	let scenes = Beat.scenes()
+	let seen = {}
+	let names = []
+
+	for (let scene of scenes) {
+		if (!scene.line) continue
+
+		let location = extractLocation(scene.line.stripFormatting())
+		if (location.length && !seen[location]) {
+			seen[location] = true
+			names.push(location)
+		}
+	}
+
+	return names
+}
+
+function isCharacterCue(type) {
+	return type == Beat.type.character || type == Beat.type.dualDialogueCharacter
+}
+function isDialogueLine(type) {
+	return type == Beat.type.dialogue || type == Beat.type.dualDialogue
+}
+function isParentheticalLine(type) {
+	return type == Beat.type.parenthetical || type == Beat.type.dualDialogueParenthetical
+}
+
+function lastEntry(scene) {
+	return scene.entries.length ? scene.entries[scene.entries.length - 1] : null
+}
+
+// Com "lastEntry", però ignora els avisos d'acció: el text i les
+// acotacions sempre han d'enganxar-se a l'últim diàleg real, encara que
+// just abans hi hagi hagut una línia d'acció pel mig.
+function lastDialogueEntry(scene) {
+	for (let i = scene.entries.length - 1; i >= 0; i--) {
+		if (scene.entries[i].kind !== "action") return scene.entries[i]
+	}
+	return null
+}
+
+// Mateixa fórmula que fa servir el Table Read Mode per calcular quant
+// triga a llegir-se cada línia (per caràcters, no per paraules).
+function estimateDurationMs(text) {
+	let chars = (text || "").replace(/\s+/g, "").length
+	return Math.max(900, Math.round(chars * 80))
+}
+
+function formatClock(ms) {
+	let totalSeconds = Math.round(ms / 1000)
+	let m = Math.floor(totalSeconds / 60)
+	let s = totalSeconds % 60
+	return m + ":" + (s < 10 ? "0" : "") + s
+}
+
+// Recorre tot el guió i agrupa els diàlegs escena per escena, com si
+// fossin una conversa de xat. Dins de cada escena, el personatge present
+// amb millor rang d'importància (segons `order`) queda sempre a la dreta
+// ("a"); la resta de personatges que hi intervenen queden a l'esquerra
+// ("b"), cadascun amb un color propi segons el seu rang.
+function buildConversation(order) {
+	let ranks = {}
+	order.forEach((name, i) => { ranks[name] = i })
+
+	let scenes = []
+	let currentScene = null
+
+	for (const line of Beat.lines()) {
+		if (line.type == Beat.type.heading) {
+			let number = line.sceneNumber
+			currentScene = {
+				heading: (number ? number + ". " : "") + line.stripFormatting(),
+				location: extractLocation(line.stripFormatting()),
+				entries: []
+			}
+			scenes.push(currentScene)
+			continue
+		}
+
+		if (!currentScene) continue
+
+		if (isCharacterCue(line.type)) {
+			let name = line.characterName()
+			if (!name || !name.length) continue
+
+			currentScene.entries.push({ kind: "dialogue", character: name, text: "", parenthetical: "" })
+			continue
+		}
+
+		if (isDialogueLine(line.type)) {
+			let entry = lastDialogueEntry(currentScene)
+			if (!entry) continue
+			let text = line.stripFormatting().trim()
+			if (text.length) entry.text += (entry.text.length ? " " : "") + text
+			continue
+		}
+
+		if (isParentheticalLine(line.type)) {
+			let entry = lastDialogueEntry(currentScene)
+			if (!entry) continue
+			let text = line.stripFormatting().trim()
+			if (text.length) entry.parenthetical += (entry.parenthetical.length ? " " : "") + text
+			continue
+		}
+
+		if (line.type == Beat.type.action) {
+			let text = line.stripFormatting().trim()
+			if (!text.length) continue
+
+			// Línies d'acció seguides es junten en un sol avís, en lloc
+			// d'un per línia.
+			let last = lastEntry(currentScene)
+			if (last && last.kind === "action") {
+				last.text += " " + text
+			} else {
+				currentScene.entries.push({ kind: "action", text: text })
+			}
+			continue
+		}
+	}
+
+	// Ens quedem només amb les escenes que realment tenen diàleg (una
+	// escena amb només accions, sense ningú parlant, no fa cap "conversa")
+	scenes = scenes.filter(scene => scene.entries.some(e => e.kind === "dialogue"))
+
+	// Segona passada: decidim qui és el "protagonista" de cada escena
+	// (el personatge present amb el rang més baix) i assignem costat i color
+	for (const scene of scenes) {
+		let dialogueEntries = scene.entries.filter(e => e.kind === "dialogue")
+		let present = [...new Set(dialogueEntries.map(e => e.character))]
+
+		let lead = present[0]
+		for (const name of present) {
+			let r = (ranks[name] !== undefined) ? ranks[name] : Infinity
+			let bestR = (ranks[lead] !== undefined) ? ranks[lead] : Infinity
+			if (r < bestR) lead = name
+		}
+
+		// Rellotge acumulat: el primer missatge de l'escena és 0:00, i cada
+		// següent suma el temps que hem calculat que triga a dir-se l'anterior
+		// (les accions també consumeixen temps, encara que no mostrem la
+		// seva hora, perquè el rellotge dels diàlegs següents sigui realista).
+		let clockMs = 0
+		for (const entry of scene.entries) {
+			if (entry.kind === "dialogue") {
+				entry.side = (entry.character === lead) ? "a" : "b"
+				entry.colorIndex = (ranks[entry.character] !== undefined) ? ranks[entry.character] : 0
+				entry.timestamp = formatClock(clockMs)
+			}
+			clockMs += estimateDurationMs(entry.text)
+		}
+		// Temps total de l'escena: el rellotge acumulat un cop comptat
+		// també el darrer diàleg (o acció), no només el seu punt de partida.
+		scene.totalTime = formatClock(clockMs)
+	}
+
+	return scenes
+}
+
+function loadPhotos(key) {
+	return Beat.getDocumentSetting(key) || {}
+}
+
+function currentData() {
+	let order = effectiveCharacterOrder()
+	return {
+		// Buit si l'usuari encara no ha triat idioma mai: la finestra farà
+		// servir l'idioma del sistema (navigator.language) com a punt de
+		// partida. Un cop es tria manualment, es queda desat aquí.
+		language: Beat.getUserDefault("language") || "",
+		characters: order,
+		locations: getLocationNames(),
+		characterPhotos: loadPhotos(SETTING_CHARACTER_PHOTOS),
+		locationPhotos: loadPhotos(SETTING_LOCATION_PHOTOS),
+		conversation: buildConversation(order)
+	}
+}
+
+// Evitem que un nom o un diàleg que contingués "</script>" trenqui l'HTML incrustat
+function safeJSON(obj) {
+	return JSON.stringify(obj).replace(/</g, "\\u003c")
+}
+
+// El mateix nom en tots els idiomes, com la pestanya "Table Read Mode":
+// és el nom propi del plugin (el mateix que surt al menú Tools), no un
+// text que calgui traduir.
+const WINDOW_TITLES = {
+	ca: "Table Read Tools",
+	en: "Table Read Tools",
+	fr: "Table Read Tools",
+	eu: "Table Read Tools"
+}
+
+// Textos dels avisos natius (Beat.alert) que fa servir l'exportació/
+// importació de fotos. Reutilitzem l'idioma ja desat per la finestra.
+const MESSAGES = {
+	ca: {
+		exportedTitle: "Exportació completada",
+		exportedText: "S'ha desat un arxiu amb totes les fotos de personatges i localitzacions.",
+		exportErrorTitle: "Error en exportar",
+		exportErrorText: "No s'ha pogut desar l'arxiu de fotos.",
+		importedTitle: "Importació completada",
+		importedText: "S'han carregat les fotos de l'arxiu al guió actual.",
+		importErrorTitle: "Error en importar",
+		importErrorText: "L'arxiu seleccionat no és un arxiu de fotos vàlid."
+	},
+	en: {
+		exportedTitle: "Export complete",
+		exportedText: "A file with all the character and location photos has been saved.",
+		exportErrorTitle: "Export error",
+		exportErrorText: "The photo file could not be saved.",
+		importedTitle: "Import complete",
+		importedText: "The photos from the file have been loaded into the current script.",
+		importErrorTitle: "Import error",
+		importErrorText: "The selected file is not a valid photo file."
+	},
+	fr: {
+		exportedTitle: "Exportation terminée",
+		exportedText: "Un fichier contenant toutes les photos des personnages et des lieux a été enregistré.",
+		exportErrorTitle: "Erreur d'exportation",
+		exportErrorText: "Impossible d'enregistrer le fichier de photos.",
+		importedTitle: "Importation terminée",
+		importedText: "Les photos du fichier ont été chargées dans le scénario actuel.",
+		importErrorTitle: "Erreur d'importation",
+		importErrorText: "Le fichier sélectionné n'est pas un fichier de photos valide."
+	},
+	eu: {
+		exportedTitle: "Esportazioa amaituta",
+		exportedText: "Pertsonaien eta kokalekuen argazki guztiak dituen fitxategi bat gorde da.",
+		exportErrorTitle: "Errorea esportatzean",
+		exportErrorText: "Ezin izan da argazkien fitxategia gorde.",
+		importedTitle: "Inportazioa amaituta",
+		importedText: "Fitxategiko argazkiak uneko gidoian kargatu dira.",
+		importErrorTitle: "Errorea inportatzean",
+		importErrorText: "Hautatutako fitxategia ez da baliozko argazki-fitxategi bat."
+	}
+}
+
+function currentLang() {
+	return Beat.getUserDefault("language") || "ca"
+}
+
+function msg(key) {
+	let lang = currentLang()
+	return (MESSAGES[lang] && MESSAGES[lang][key]) || MESSAGES.ca[key] || key
+}
+
+let ui = Beat.assetAsString("ui.html")
+ui = ui.replace("%initialData%", safeJSON(currentData()))
+
+let win = Beat.htmlWindow(ui, 820, 680, function () {
+	Beat.setUserDefault("frame", win.getFrame())
+	Beat.end()
+})
+win.title = WINDOW_TITLES[Beat.getUserDefault("language")] || WINDOW_TITLES.ca
+win.resizable = true
+
+let savedFrame = Beat.getUserDefault("frame")
+if (savedFrame) win.setFrame(savedFrame.x, savedFrame.y, savedFrame.width, savedFrame.height)
+
+Beat.custom = {
+	// Es crida quan l'usuari prem "Actualitza" a la finestra, per si ha
+	// afegit personatges, escenes o diàlegs nous al guió
+	refresh: function () {
+		win.runJS("setData(" + safeJSON(currentData()) + ")")
+	},
+
+	savePhoto: function (kind, name, dataURI) {
+		let key = (kind === "character") ? SETTING_CHARACTER_PHOTOS : SETTING_LOCATION_PHOTOS
+		let photos = loadPhotos(key)
+		photos[name] = dataURI
+		Beat.setDocumentSetting(key, photos)
+	},
+
+	removePhoto: function (kind, name) {
+		let key = (kind === "character") ? SETTING_CHARACTER_PHOTOS : SETTING_LOCATION_PHOTOS
+		let photos = loadPhotos(key)
+		delete photos[name]
+		Beat.setDocumentSetting(key, photos)
+	},
+
+	// L'usuari ha reordenat els personatges (fletxes ▲▼ a la pestanya
+	// Personatges). Desem el nou ordre d'importància i recalculem la
+	// conversa perquè el costat/color de cada bombolla ho reflecteixi.
+	saveOrder: function (order) {
+		Beat.setDocumentSetting(SETTING_CHARACTER_ORDER, order)
+		win.runJS("setData(" + safeJSON(currentData()) + ")")
+	},
+
+	// Es crida tant quan l'usuari tria un idioma al desplegable com just
+	// en obrir la finestra (perquè el títol nadiu de la finestra, que no
+	// és part de la pàgina web, coincideixi amb l'idioma detectat).
+	setLanguage: function (lang) {
+		Beat.setUserDefault("language", lang)
+		win.title = WINDOW_TITLES[lang] || WINDOW_TITLES.ca
+	},
+
+	// Desa totes les fotos (personatges + localitzacions) en un sol arxiu
+	// portàtil, perquè es puguin traslladar a un altre ordinador o document,
+	// ja que les fotos es desen incrustades dins del propi .fountain i no
+	// viatgen soles enlloc més.
+	exportPhotos: function () {
+		let payload = {
+			type: "TableReadToolsPhotos",
+			version: 1,
+			characterPhotos: loadPhotos(SETTING_CHARACTER_PHOTOS),
+			locationPhotos: loadPhotos(SETTING_LOCATION_PHOTOS)
+		}
+
+		Beat.saveFile("json", function (path) {
+			if (!path) return
+			let ok = Beat.writeToFile(path, JSON.stringify(payload))
+			if (ok) {
+				Beat.alert(msg("exportedTitle"), msg("exportedText"))
+			} else {
+				Beat.alert(msg("exportErrorTitle"), msg("exportErrorText"))
+			}
+		})
+	},
+
+	// Llegeix un arxiu exportat prèviament i en fusiona les fotos amb les
+	// que ja hi ha (les del nom coincident se sobreescriuen, la resta es
+	// mantenen tal qual).
+	importPhotos: function () {
+		Beat.openFile(["json"], function (path) {
+			if (!path) return
+
+			let content = Beat.fileToString(path)
+			let data = null
+			try { data = content ? JSON.parse(content) : null } catch (e) { data = null }
+
+			if (!data || typeof data !== "object" || (!data.characterPhotos && !data.locationPhotos)) {
+				Beat.alert(msg("importErrorTitle"), msg("importErrorText"))
+				return
+			}
+
+			let characterPhotos = loadPhotos(SETTING_CHARACTER_PHOTOS)
+			let locationPhotos = loadPhotos(SETTING_LOCATION_PHOTOS)
+			Object.assign(characterPhotos, data.characterPhotos || {})
+			Object.assign(locationPhotos, data.locationPhotos || {})
+			Beat.setDocumentSetting(SETTING_CHARACTER_PHOTOS, characterPhotos)
+			Beat.setDocumentSetting(SETTING_LOCATION_PHOTOS, locationPhotos)
+
+			win.runJS("setData(" + safeJSON(currentData()) + ")")
+			Beat.alert(msg("importedTitle"), msg("importedText"))
+		})
+	},
+
+	// Esborra totes les fotos (personatges i localitzacions) del document
+	// actual. La finestra ja demana confirmació abans de cridar això.
+	clearAllPhotos: function () {
+		Beat.setDocumentSetting(SETTING_CHARACTER_PHOTOS, {})
+		Beat.setDocumentSetting(SETTING_LOCATION_PHOTOS, {})
+		win.runJS("setData(" + safeJSON(currentData()) + ")")
+	}
+}
