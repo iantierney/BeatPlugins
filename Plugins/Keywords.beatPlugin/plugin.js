@@ -1,4 +1,4 @@
-/* @ians branch
+/* 
 Title: Keywords
 Copyright: Bode Pickman
 <Description>
@@ -21,7 +21,7 @@ This grouping behavior only applies to the Boneyard. The Notepad handles each pa
 </Description>
 
 Image: Keywords.png
-Version: 2.36
+Version: 2.36 (@ians branch)
 */
 
 // --- Global plugin state --- //
